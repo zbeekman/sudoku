@@ -19,56 +19,43 @@ class Sudoku:
     cols: list[set[int]]
     rows: list[set[int]]
     squares: dict[tuple[int, int], set[int]]
-    cells_to_solve: int = _NN
 
     @staticmethod
-    def _r(i: int) -> int:
-        """Returns the row index of the ith element in the puzzle"""
-        return i // Sudoku._N
-    @staticmethod
-    def _c(i: int) -> int:
-        """Returns the column index of the ith element in the puzzle"""
-        return i % Sudoku._N
-    @staticmethod
-    def _b(i: int) -> tuple[int, int]:
-        """Returns the block index of the ith element in the puzzle"""
-        return (Sudoku._r(i) // Sudoku._BL, Sudoku._c(i) // Sudoku._BL)
-    
+    def _get_rcb(i: int) -> tuple[int, int, tuple[int, int]]:
+        """Returns the row, column and block index of the ith element in the puzzle"""
+        r = i // Sudoku._N
+        c = i % Sudoku._N
+        b = (r // Sudoku._BL, c // Sudoku._BL)
+        return (r, c, b)
+
     def cell_is_valid(self, i) -> bool:
         """Returns whether the puzzle is valid and populates the rows, cols, and squares sets"""
-        _r = self._r
-        _c = self._c
-        _b = self._b
+        _r, _c, _b = self._get_rcb(i)
         if self.solution[i] == 0:
             return True
-        if self.solution[i] in self.rows[_r(i)] | self.cols[_c(i)] | self.squares[_b(i)]:
+        if self.solution[i] in self.rows[_r] | self.cols[_c] | self.squares[_b]:
             return False
-        self.rows[_r(i)].add(self.solution[i])
-        self.cols[_c(i)].add(self.solution[i])
-        self.squares[_b(i)].add(self.solution[i])
+        self.rows[_r].add(self.solution[i])
+        self.cols[_c].add(self.solution[i])
+        self.squares[_b].add(self.solution[i])
         return True
-    
+
     def prune_candidates(self, i) -> None:
         """Prunes the candidates for each cell and updates the solution, rows, cols and boxes if a cell has only one candidate"""
-        _r = self._r
-        _c = self._c
-        _b = self._b
+        _r, _c, _b = self._get_rcb(i)
         if self.solution[i] == 0:
-            self.cell_candidates[i] -= self.rows[_r(i)] | self.cols[_c(i)] | self.squares[_b(i)]
+            self.cell_candidates[i] -= self.rows[_r] | self.cols[_c] | self.squares[_b]
             if len(self.cell_candidates[i]) == 1:
                 self.solution[i] = self.cell_candidates[i].pop()
-                self.rows[_r(i)].add(self.solution[i])
-                self.cols[_c(i)].add(self.solution[i])
-                self.squares[_b(i)].add(self.solution[i])
-                self.cells_to_solve -= 1
+                self.rows[_r].add(self.solution[i])
+                self.cols[_c].add(self.solution[i])
+                self.squares[_b].add(self.solution[i])
         else:
             self.cell_candidates[i] = set()
-    
+
     def solve(self,i) -> bool:
         """Recursively solves the puzzle using back tracking"""
-        _r = self._r
-        _c = self._c
-        _b = self._b
+        _r, _c, _b = self._get_rcb(i)
         if i >= Sudoku._NN:
             return True
         if self.solution[i] != 0:
@@ -77,13 +64,11 @@ class Sudoku:
             for candidate in self.cell_candidates[i]:
                 self.solution[i] = candidate
                 if self.cell_is_valid(i):
-                    self.cells_to_solve -= 1
                     if self.solve(i+1):
                         return True
-                    self.cells_to_solve += 1
-                    self.rows[_r(i)].remove(self.solution[i])
-                    self.cols[_c(i)].remove(self.solution[i])
-                    self.squares[_b(i)].remove(self.solution[i])
+                    self.rows[_r].remove(self.solution[i])
+                    self.cols[_c].remove(self.solution[i])
+                    self.squares[_b].remove(self.solution[i])
                 self.solution[i] = 0
             return False
 
@@ -91,25 +76,23 @@ class Sudoku:
     def __init__(self, puzzle: tuple[int, ...]) -> None:
         if not len(puzzle) == Sudoku._NN:
             raise ValueError(f"Invalid puzzle, must be {Sudoku._NN} elements long")
-        self.cells_to_solve = Sudoku._NN
         self.puzzle = puzzle
         self.solution = list(puzzle)
         self.cols = [set() for _ in range(Sudoku._N)]
         self.rows = [set() for _ in range(Sudoku._N)]
         self.squares = {(i,j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)}
-        for i in range(Sudoku._NN):
-            if self.puzzle[i] != 0:
-                self.cells_to_solve -= 1
-            if not self.cell_is_valid(i):
-                raise ValueError("Invalid puzzle")
         self.cell_candidates = [set(range(1,10)) for i in range(Sudoku._NN)]
-        _to_solve = self.cells_to_solve
-        _n = 1
-        while _n > 0:
+        for i in range(Sudoku._NN):
+            if not self.cell_is_valid(i):
+                print(self.__repr__() + "\n")
+                raise ValueError(f"Invalid puzzle at square {i} {self._get_rcb(i)}: {self.solution[i]}")
+        _solved = self.puzzle.count(0)
+        cross_hatch = True
+        while cross_hatch:
             for i in range(Sudoku._NN):
                 self.prune_candidates(i)
-            _n = self.cells_to_solve - _to_solve
-            _to_solve = self.cells_to_solve
+            if cross_hatch := self.solution.count(0) != _solved:
+                _solved = self.solution.count(0)
 
     def __str__(self) -> str:
         """Returns a pretty string representation of the puzzle"""
