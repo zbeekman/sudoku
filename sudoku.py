@@ -13,6 +13,9 @@ class Sudoku:
     _NN = _N*_N
     _BL = int(sqrt(_N))
 
+    _r: tuple[int, ...]
+    _c: tuple[int, ...]
+    _b: tuple[tuple[int, int], ...]
     puzzle: tuple[int, ...]
     solution: list[int]
     cell_candidates: list[set[int]]
@@ -30,7 +33,9 @@ class Sudoku:
 
     def cell_is_valid(self, i) -> bool:
         """Returns whether the puzzle is valid and populates the rows, cols, and squares sets"""
-        _r, _c, _b = self._get_rcb(i)
+        _r = self._r[i]
+        _c = self._c[i]
+        _b = self._b[i]
         if self.solution[i] == 0:
             return True
         if self.solution[i] in self.rows[_r] | self.cols[_c] | self.squares[_b]:
@@ -55,9 +60,11 @@ class Sudoku:
 
     def solve(self,i) -> bool:
         """Recursively solves the puzzle using back tracking"""
-        _r, _c, _b = self._get_rcb(i)
         if i >= Sudoku._NN:
             return True
+        _r = self._r[i]
+        _c = self._c[i]
+        _b = self._b[i]
         if self.solution[i] != 0:
             return self.solve(i+1)
         else:
@@ -76,6 +83,9 @@ class Sudoku:
     def __init__(self, puzzle: tuple[int, ...]) -> None:
         if not len(puzzle) == Sudoku._NN:
             raise ValueError(f"Invalid puzzle, must be {Sudoku._NN} elements long")
+        self._r = tuple(i // Sudoku._N for i in range(Sudoku._NN))
+        self._c = tuple(i % Sudoku._N for i in range(Sudoku._NN))
+        self._b = tuple((self._r[i] // Sudoku._BL, self._c[i] // Sudoku._BL) for i in range(Sudoku._NN))
         self.puzzle = puzzle
         self.solution = list(puzzle)
         self.cols = [set() for _ in range(Sudoku._N)]
