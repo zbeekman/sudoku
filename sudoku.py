@@ -38,7 +38,9 @@ class Sudoku:
         _b = self._b[i]
         if self.solution[i] == 0:
             return True
-        if self.solution[i] in self.rows[_r] | self.cols[_c] | self.squares[_b]:
+        if (self.solution[i] in self.rows[_r] or
+            self.solution[i] in self.cols[_c] or
+            self.solution[i] in self.squares[_b]):
             return False
         self.rows[_r].add(self.solution[i])
         self.cols[_c].add(self.solution[i])
