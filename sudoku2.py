@@ -40,10 +40,15 @@ class Sudoku:
 
     def is_safe_to_insert(self, i, j, val) -> bool:
         """Returns whether it is safe to insert val at (i,j)"""
-        if (val in self.solution[i] or
-            val in [self.solution[k][j] for k in range(Sudoku._N)] or
-            val in [self.solution[i//Sudoku._BL*Sudoku._BL+k][j//Sudoku._BL*Sudoku._BL+l] for k in range(Sudoku._BL) for l in range(Sudoku._BL)]):
+        if (val in self.solution[i]):
             return False
+        for k in range(Sudoku._N):
+            if val == self.solution[k][j]:
+                return False
+        for l in range(Sudoku._BL):
+            for k in range(Sudoku._BL):
+                if val == self.solution[i//Sudoku._BL*Sudoku._BL+l][j//Sudoku._BL*Sudoku._BL+k]:
+                    return False
         return True
 
     def solve(self,i,j) -> bool:
