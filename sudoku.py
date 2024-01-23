@@ -3,6 +3,7 @@ from math import sqrt
 import inspect
 from colorama import init as colorama_init
 from colorama import Fore, Style
+from hashlib import sha1
 
 colorama_init()
 
@@ -17,11 +18,14 @@ class Sudoku:
     _c: tuple[int, ...]
     _b: tuple[tuple[int, int], ...]
     puzzle: tuple[int, ...]
+    puzzle_id: str
     solution: list[int]
+    solution_id: str
     cell_candidates: list[set[int]]
     cols: list[set[int]]
     rows: list[set[int]]
     squares: dict[tuple[int, int], set[int]]
+    n_solutions: int = 0
 
     @staticmethod
     def _get_rcb(i: int) -> tuple[int, int, tuple[int, int]]:
@@ -48,7 +52,10 @@ class Sudoku:
         return True
 
     def prune_candidates(self, i) -> None:
-        """Prunes the candidates for each cell and updates the solution, rows, cols and boxes if a cell has only one candidate"""
+        """Prunes the candidates for each cell and updates the solution, rows, cols and boxes if a cell has only one candidate.
+        This method can be called repeatedly to solve the puzzle using elimination. Solving the puzzle using elimination
+        should be faster than using back tracking. It also gaurantees that any cells filled in are correct and unique given
+        the starting puzzle state."""
         _r, _c, _b = self._get_rcb(i)
         if self.solution[i] == 0:
             self.cell_candidates[i] -= self.rows[_r] | self.cols[_c] | self.squares[_b]
@@ -63,6 +70,8 @@ class Sudoku:
     def solve(self,i) -> bool:
         """Recursively solves the puzzle using back tracking"""
         if i >= Sudoku._NN:
+            self.solution_id = sha1(str(tuple(self.solution)).encode()).hexdigest()
+            self.n_solutions += 1
             return True
         _r = self._r[i]
         _c = self._c[i]
@@ -89,7 +98,10 @@ class Sudoku:
         self._c = tuple(i % Sudoku._N for i in range(Sudoku._NN))
         self._b = tuple((self._r[i] // Sudoku._BL, self._c[i] // Sudoku._BL) for i in range(Sudoku._NN))
         self.puzzle = puzzle
+        self.puzzle_id = sha1(str(puzzle).encode()).hexdigest()
         self.solution = list(puzzle)
+        self.solution_id = ""
+        self.n_solutions = 0
         self.cols = [set() for _ in range(Sudoku._N)]
         self.rows = [set() for _ in range(Sudoku._N)]
         self.squares = {(i,j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)}
@@ -182,10 +194,14 @@ if __name__ == "__main__":
     6 4 9  5 7 3  8 1 2 """
     # print(profiler.output_text(unicode=True, color=True))
     print(board)
-    # print(board.__repr__())
+    print(board.__repr__())
     # print(inspect.getsource(Sudoku.__repr__))
     # with Profiler(interval=0.001) as profiler2:
-    board.solve(0)
+    if not board.solve(0):
+        print(board)
+        print(board.__repr__())
+
+        raise ValueError(f"No sulution found for puzzle {board.puzzle_id}")
     # print(profiler2.output_text(unicode=True, color=True))
     print(board)
-    # print(board.__repr__())
+    print(board.__repr__())
