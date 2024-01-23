@@ -93,7 +93,7 @@ class Sudoku:
         self.cols = [set() for _ in range(Sudoku._N)]
         self.rows = [set() for _ in range(Sudoku._N)]
         self.squares = {(i,j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)}
-        self.cell_candidates = [set(range(1,10)) for i in range(Sudoku._NN)]
+        self.cell_candidates = [set(range(1,Sudoku._N + 1)) for i in range(Sudoku._NN)]
         for i in range(Sudoku._NN):
             if not self.cell_is_valid(i):
                 print(self.__repr__() + "\n")
@@ -141,7 +141,7 @@ if __name__ == "__main__":
             0,8,0, 0,3,0, 0,0,0,
             ))
     # print(profiler.output_text(unicode=True, color=True))
-    # print(board)
+    print(board)
     # print(board.__repr__())
     # print(inspect.getsource(Sudoku.__repr__))
     # with Profiler(interval=0.001) as profiler2:
