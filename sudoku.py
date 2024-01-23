@@ -127,6 +127,7 @@ class Sudoku:
 if __name__ == "__main__":
     # from pyinstrument import Profiler
     # with Profiler(interval=0.00001) as profiler:
+    # NYT hard puzzle
     board = Sudoku((
             0,0,0, 2,0,0, 0,0,0,
             0,0,0, 5,9,0, 3,0,7,
@@ -140,6 +141,45 @@ if __name__ == "__main__":
             0,5,7, 0,0,4, 0,0,0,
             0,8,0, 0,3,0, 0,0,0,
             ))
+    # NYT hard puzzle, solution:
+    """ 9 6 5  2 7 3  8 1 4
+        1 4 8  5 9 6  3 2 7
+        7 2 3  4 8 1  6 9 5
+
+        5 7 2  3 4 8  1 6 9
+        6 1 9  7 5 2  4 8 3
+        8 3 4  1 6 9  5 7 2
+
+        3 9 6  8 2 5  7 4 1
+        2 5 7  6 1 4  9 3 8
+        4 8 1  9 3 7  2 5 6 """
+    # NYT easy puzzle, solved using elimination during pruning
+    """ board = Sudoku((
+            0,0,4, 0,6,0, 3,0,0,
+            0,7,6, 0,3,0, 9,2,0,
+            1,0,3, 8,5,0, 0,6,0,
+
+            0,1,0, 0,4,5, 0,0,3,
+            0,9,0, 0,0,2, 1,0,5,
+            4,6,0, 3,0,1, 0,8,0,
+
+            0,0,0, 9,2,8, 0,3,0,
+            8,3,2, 0,0,0, 0,7,9,
+            0,0,0, 5,0,3, 0,0,2,
+            )) """
+    # NYT easy puzzle, solution:
+    """
+    9 8 4  2 6 7  3 5 1
+    5 7 6  1 3 4  9 2 8
+    1 2 3  8 5 9  7 6 4
+
+    2 1 8  7 4 5  6 9 3
+    3 9 7  6 8 2  1 4 5
+    4 6 5  3 9 1  2 8 7
+
+    7 5 1  9 2 8  4 3 6
+    8 3 2  4 1 6  5 7 9
+    6 4 9  5 7 3  8 1 2 """
     # print(profiler.output_text(unicode=True, color=True))
     print(board)
     # print(board.__repr__())
