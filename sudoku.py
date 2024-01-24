@@ -38,18 +38,27 @@ class Sudoku:
 
     def cell_is_valid(self, i) -> bool:
         """Returns whether the puzzle is valid and populates the rows, cols, and squares sets"""
-        _r = self._r[i]
-        _c = self._c[i]
-        _b = self._b[i]
+        if (self.solution[i] in self.rows[self._r[i]] or
+            self.solution[i] in self.cols[self._c[i]] or
+            self.solution[i] in self.squares[self._b[i]]):
+            return False
         if self.solution[i] == 0:
             return True
-        if (self.solution[i] in self.rows[_r] or
-            self.solution[i] in self.cols[_c] or
-            self.solution[i] in self.squares[_b]):
+        self.rows[self._r[i]].add(self.solution[i])
+        self.cols[self._c[i]].add(self.solution[i])
+        self.squares[self._b[i]].add(self.solution[i])
+        return True
+
+    def candidate_inserted_if_valid(self, i, candidate) -> bool:
+        """Inserts the candidate into the solution if it is valid and returns whether the candidate was inserted"""
+        if (candidate in self.rows[self._r[i]] or
+            candidate in self.cols[self._c[i]] or
+            candidate in self.squares[self._b[i]]):
             return False
-        self.rows[_r].add(self.solution[i])
-        self.cols[_c].add(self.solution[i])
-        self.squares[_b].add(self.solution[i])
+        self.solution[i] = candidate
+        self.rows[self._r[i]].add(candidate)
+        self.cols[self._c[i]].add(candidate)
+        self.squares[self._b[i]].add(candidate)
         return True
 
     def solution_is_valid(self) -> bool:
@@ -77,7 +86,6 @@ class Sudoku:
                 self.squares[_b].add(self.solution[i])
         else:
             self.cell_candidates[i] = set()
-
     def solve(self, i) -> bool:
         is_solved = self._solve(i)
         if self.n_solutions > 0:
@@ -91,27 +99,21 @@ class Sudoku:
         if i >= Sudoku._NN:
             if self.n_solutions == 0:
                 self._temp = self.solution.copy()
+            self.n_solutions = self.n_solutions + 1
             return True
-        _r = self._r[i]
-        _c = self._c[i]
-        _b = self._b[i]
         if self.solution[i] != 0:
             return self._solve(i+1)
         else:
             have_solution = False
             for candidate in self.cell_candidates[i]:
-                self.solution[i] = candidate
-                if self.cell_is_valid(i):
+                if self.candidate_inserted_if_valid(i, candidate):
                     if (have_solution := self._solve(i+1)):
-                        if i == Sudoku._NN - 1:
-                            # Last cell is valid, incriment number of good solutions
-                            self.n_solutions = self.n_solutions + 1
-                            if self.n_solutions > 1:
-                                return True
-                    self.rows[_r].remove(candidate)
-                    self.cols[_c].remove(candidate)
-                    self.squares[_b].remove(candidate)
-                self.solution[i] = 0
+                        if self.n_solutions > 1:
+                            return True
+                    self.rows[self._r[i]].remove(candidate)
+                    self.cols[self._c[i]].remove(candidate)
+                    self.squares[self._b[i]].remove(candidate)
+                    self.solution[i] = 0
             return have_solution
 
 
