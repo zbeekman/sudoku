@@ -122,8 +122,6 @@ class Sudoku:
                 self._temp = self.solution.copy()
             self.n_solutions = self.n_solutions + 1
             return True
-        if self.solution[self.solution_order[i]] != 0:
-            return self._solve(i+1)
         else:
             have_solution = False
             for candidate in self.cell_candidates[self.solution_order[i]]:
