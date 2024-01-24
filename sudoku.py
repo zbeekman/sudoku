@@ -88,8 +88,9 @@ class Sudoku:
                 return
         else:
             self.cell_candidates[i] = list()
-    def solve(self, i) -> bool:
-        is_solved = self._solve(i)
+    def solve(self, i, find_duplicates=False) -> bool:
+        print(f"finding duplicates: {find_duplicates}")
+        is_solved = self._solve(i, find_duplicates)
         if self.n_solutions > 0:
             self.solution = self._temp
             self.solution_id = sha1(str(self.solution).encode()).hexdigest()
@@ -114,7 +115,7 @@ class Sudoku:
 
         return frequencies
 
-    def _solve(self,i) -> bool:
+    def _solve(self,i, find_duplicates=False) -> bool:
         """Recursively solves the puzzle using back tracking"""
         if i >= len(self.solution_order):
             if self.n_solutions == 0:
@@ -127,8 +128,8 @@ class Sudoku:
             have_solution = False
             for candidate in self.cell_candidates[self.solution_order[i]]:
                 if self.candidate_inserted_if_valid(self.solution_order[i], candidate):
-                    if (have_solution := self._solve(i+1)):
-                        if self.n_solutions > 1:
+                    if (have_solution := self._solve(i+1, find_duplicates)):
+                        if (not find_duplicates) or self.n_solutions > 1:
                             return True
                     self.rows[self._r[self.solution_order[i]]].remove(candidate)
                     self.cols[self._c[self.solution_order[i]]].remove(candidate)
@@ -248,7 +249,7 @@ if __name__ == "__main__":
     print(board.__repr__())
     # print(inspect.getsource(Sudoku.__repr__))
     # with Profiler(interval=0.001) as profiler2:
-    if not board.solve(0):
+    if not board.solve(0, find_duplicates=True):
         print(board)
         print(board.__repr__())
         raise ValueError(f"No solution found for puzzle {board.puzzle_id}")
