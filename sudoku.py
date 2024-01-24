@@ -161,12 +161,15 @@ class Sudoku:
             if cross_hatch := self.solution.count(0) != _solved:
                 _solved = self.solution.count(0)
         solution_order = [i for i in range(Sudoku._NN) if self.solution[i] == 0]
-        # solution_order.sort(key=lambda i: self._sort_by_candidate_frequency()[i])
-        frequencies = self._sort_by_candidate_frequency()
+        # solution_order.sort(key=lambda i: len(self.cell_candidates[i]) + 1/self._sort_by_candidate_frequency()[i])
         # solution_order.sort(key=lambda i: len(self.cell_candidates[i]))
+        # solution_order.sort(key=lambda i: self._sort_by_candidate_frequency()[i],reverse=True)
+        # Perform solution order based on the number of constraints on each cell. Cells with the most constraints are solved first.
+        solution_order.sort(key=lambda i: len(self.rows[self._r[i]]) + len(self.cols[self._c[i]]) +len(self.squares[self._b[i]]),reverse=True)
+        average_freq = self._sort_by_candidate_frequency()
         self.solution_order = tuple(solution_order)
         # for i in solution_order:
-        #     print(f"{i}: {self.cell_candidates[i]}")
+        #     print(f"{i}: {self.cell_candidates[i]}, average frequency: {average_freq[i]}")
 
     def __str__(self) -> str:
         """Returns a pretty string representation of the puzzle"""
