@@ -14,18 +14,19 @@ class Sudoku:
     _NN = _N*_N
     _BL = int(sqrt(_N))
 
-    _r: tuple[int, ...]
-    _c: tuple[int, ...]
-    _b: tuple[tuple[int, int], ...]
-    puzzle: tuple[int, ...]
+    _r: tuple[int, ...] = field(repr=False)
+    _c: tuple[int, ...] = field(repr=False)
+    _b: tuple[tuple[int, int], ...] = field(repr=False)
     puzzle_id: str
-    solution: list[int]
+    puzzle: tuple[int, ...]
     solution_id: str
+    solution: list[int]
+    _temp: list[int] = field(init=False, repr=False)
     cell_candidates: list[set[int]]
     cols: list[set[int]]
     rows: list[set[int]]
     squares: dict[tuple[int, int], set[int]]
-    n_solutions: int = 0
+    n_solutions: int
 
     @staticmethod
     def _get_rcb(i: int) -> tuple[int, int, tuple[int, int]]:
@@ -51,6 +52,16 @@ class Sudoku:
         self.squares[_b].add(self.solution[i])
         return True
 
+    def solution_is_valid(self) -> bool:
+        """Returns whether the solution is valid"""
+        self.cols = [set() for _ in range(Sudoku._N)]
+        self.rows = [set() for _ in range(Sudoku._N)]
+        self.squares = {(i,j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)}
+        for i in range(Sudoku._NN):
+            if not self.cell_is_valid(i):
+                return False
+        return True
+
     def prune_candidates(self, i) -> None:
         """Prunes the candidates for each cell and updates the solution, rows, cols and boxes if a cell has only one candidate.
         This method can be called repeatedly to solve the puzzle using elimination. Solving the puzzle using elimination
@@ -67,28 +78,41 @@ class Sudoku:
         else:
             self.cell_candidates[i] = set()
 
-    def solve(self,i) -> bool:
+    def solve(self, i) -> bool:
+        is_solved = self._solve(i)
+        if self.n_solutions > 0:
+            self.solution = self._temp
+            self.solution_id = sha1(str(self.solution).encode()).hexdigest()
+            return True
+        return is_solved
+
+    def _solve(self,i) -> bool:
         """Recursively solves the puzzle using back tracking"""
         if i >= Sudoku._NN:
-            self.solution_id = sha1(str(tuple(self.solution)).encode()).hexdigest()
-            self.n_solutions += 1
+            if self.n_solutions == 0:
+                self._temp = self.solution.copy()
             return True
         _r = self._r[i]
         _c = self._c[i]
         _b = self._b[i]
         if self.solution[i] != 0:
-            return self.solve(i+1)
+            return self._solve(i+1)
         else:
+            have_solution = False
             for candidate in self.cell_candidates[i]:
                 self.solution[i] = candidate
                 if self.cell_is_valid(i):
-                    if self.solve(i+1):
-                        return True
-                    self.rows[_r].remove(self.solution[i])
-                    self.cols[_c].remove(self.solution[i])
-                    self.squares[_b].remove(self.solution[i])
+                    if (have_solution := self._solve(i+1)):
+                        if i == Sudoku._NN - 1:
+                            # Last cell is valid, incriment number of good solutions
+                            self.n_solutions = self.n_solutions + 1
+                            if self.n_solutions > 1:
+                                return True
+                    self.rows[_r].remove(candidate)
+                    self.cols[_c].remove(candidate)
+                    self.squares[_b].remove(candidate)
                 self.solution[i] = 0
-            return False
+            return have_solution
 
 
     def __init__(self, puzzle: tuple[int, ...]) -> None:
@@ -98,23 +122,20 @@ class Sudoku:
         self._c = tuple(i % Sudoku._N for i in range(Sudoku._NN))
         self._b = tuple((self._r[i] // Sudoku._BL, self._c[i] // Sudoku._BL) for i in range(Sudoku._NN))
         self.puzzle = puzzle
+        self._temp = list(puzzle)
         self.puzzle_id = sha1(str(puzzle).encode()).hexdigest()
         self.solution = list(puzzle)
         self.solution_id = ""
         self.n_solutions = 0
-        self.cols = [set() for _ in range(Sudoku._N)]
-        self.rows = [set() for _ in range(Sudoku._N)]
-        self.squares = {(i,j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)}
         self.cell_candidates = [set(range(1,Sudoku._N + 1)) for i in range(Sudoku._NN)]
-        for i in range(Sudoku._NN):
-            if not self.cell_is_valid(i):
-                print(self.__repr__() + "\n")
-                raise ValueError(f"Invalid puzzle at square {i} {self._get_rcb(i)}: {self.solution[i]}")
+        if not self.solution_is_valid():
+            raise ValueError(f"Invalid puzzle:\n{self}")
         _solved = self.puzzle.count(0)
         cross_hatch = True
         while cross_hatch:
             for i in range(Sudoku._NN):
                 self.prune_candidates(i)
+            cross_hatch = False
             if cross_hatch := self.solution.count(0) != _solved:
                 _solved = self.solution.count(0)
 
@@ -129,6 +150,7 @@ class Sudoku:
                     board_ += " "
                 cell_ = self.solution[i*Sudoku._N+j]
                 if self.puzzle[i*Sudoku._N+j] != 0:
+                    color = Fore.BLUE if cell_ == self.puzzle[i*Sudoku._N+j] else Fore.RED
                     board_ += Fore.BLUE + str(cell_) + Style.RESET_ALL + " "
                 else:
                     board_ += (str(cell_) if cell_ != 0 else ".") + " "
@@ -200,8 +222,20 @@ if __name__ == "__main__":
     if not board.solve(0):
         print(board)
         print(board.__repr__())
+        raise ValueError(f"No solution found for puzzle {board.puzzle_id}")
 
-        raise ValueError(f"No sulution found for puzzle {board.puzzle_id}")
+    if not board.solution_is_valid():
+        print(board)
+        print(board.__repr__())
+        raise ValueError(f"Invalid solution for puzzle {board.puzzle_id}")
+    diff_puzzle = []
+    for i in range(Sudoku._NN):
+        if board.puzzle[i] != 0 and board.puzzle[i] != board.solution[i]:
+            diff_puzzle[i] = board.solution[i]
+    if len(diff_puzzle) != 0:
+        board.solution = board.solution.copy()
+        raise ValueError(f"Invalid solution for puzzle {board.puzzle_id}")
     # print(profiler2.output_text(unicode=True, color=True))
     print(board)
     print(board.__repr__())
+
