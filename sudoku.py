@@ -37,6 +37,27 @@ class Sudoku:
         b = (r // Sudoku._BL, c // Sudoku._BL)
         return (r, c, b)
 
+    @staticmethod
+    def _get_index(r: int, c: int) -> int:
+        """Returns the index of the cell at row r and column c"""
+        return r*Sudoku._N + c
+
+    @staticmethod
+    def _get_rows(i: int) -> tuple[int, ...]:
+        """Returns a tuple of indices in the same row as the ith element in the puzzle"""
+        return tuple(j for j in range(i // Sudoku._N * Sudoku._N, i // Sudoku._N * Sudoku._N + Sudoku._N))
+
+    @staticmethod
+    def _get_cols(i: int) -> tuple[int, ...]:
+        """Returns a tuple of indices in the same column as th ith element in the puzzle"""
+        return tuple(j for j in range(i % Sudoku._N, Sudoku._NN, Sudoku._N))
+
+    @staticmethod
+    def _get_block(i: int) -> tuple[int, ...]:
+        """Returns a tuple of indices in the same block as the ith element in the puzzle"""
+        r, c, b = Sudoku._get_rcb(i)
+        return tuple([j for j in range(Sudoku._NN) if ((j//Sudoku._N)//Sudoku._BL == b[0] and (j % Sudoku._N)//Sudoku._BL == b[1])])
+
     def cell_is_valid(self, i) -> bool:
         """Returns whether the puzzle is valid and populates the rows, cols, and squares sets"""
         if (self.solution[i] in self.rows[self._r[i]] or
@@ -72,22 +93,58 @@ class Sudoku:
                 return False
         return True
 
-    def prune_candidates(self, i) -> None:
+    def prune_candidates(self, i) -> bool:
         """Prunes the candidates for each cell and updates the solution, rows, cols and boxes if a cell has only one candidate.
         This method can be called repeatedly to solve the puzzle using elimination. Solving the puzzle using elimination
         should be faster than using back tracking. It also gaurantees that any cells filled in are correct and unique given
         the starting puzzle state."""
         _r, _c, _b = self._get_rcb(i)
+        modified = False
         if self.solution[i] == 0:
+            len_before = len(self.cell_candidates[i])
             self.cell_candidates[i] = list(set(self.cell_candidates[i]) - (self.rows[_r] | self.cols[_c] | self.squares[_b]))
+            modified = len_before != len(self.cell_candidates[i])
+            # modified = modified or self.prune_doublets(i)
             if len(self.cell_candidates[i]) == 1:
                 self.solution[i] = self.cell_candidates[i].pop()
                 self.rows[_r].add(self.solution[i])
                 self.cols[_c].add(self.solution[i])
                 self.squares[_b].add(self.solution[i])
-                return
+            return modified
         else:
-            self.cell_candidates[i] = list()
+            if len(self.cell_candidates[i]) > 0:
+                self.cell_candidates[i] = list()
+                return True
+            return False
+
+    def prune_doublets(self,i) -> bool:
+        """Removes doublets from the candidates and returns whether any doublets were removed"""
+        modified = False
+        if len(self.cell_candidates[i]) == 2:
+            for j in Sudoku._get_rows(i):
+                if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
+                    for k in Sudoku._get_rows(i):
+                        if k != i and k != j:
+                            self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
+                            modified = True
+                    break
+            for j in Sudoku._get_cols(i):
+                if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
+                    for k in Sudoku._get_cols(i):
+                        if k != i and k != j:
+                            self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
+                            modified = True
+                    break
+            for j in Sudoku._get_block(i):
+                if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
+                    for k in Sudoku._get_block(i):
+                        if k != i and k != j:
+                            self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
+                            modified = True
+                    break
+        return modified
+
+
     def solve(self, i, find_duplicates=False) -> bool:
         print(f"finding duplicates: {find_duplicates}")
         is_solved = self._solve(i, find_duplicates)
