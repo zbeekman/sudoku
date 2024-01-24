@@ -22,10 +22,11 @@ class Sudoku:
     solution_id: str
     solution: list[int]
     _temp: list[int] = field(init=False, repr=False)
-    cell_candidates: list[set[int]]
+    cell_candidates: list[list[int]]
     cols: list[set[int]]
     rows: list[set[int]]
     squares: dict[tuple[int, int], set[int]]
+    solution_order: tuple[int, ...]
     n_solutions: int
 
     @staticmethod
@@ -78,14 +79,15 @@ class Sudoku:
         the starting puzzle state."""
         _r, _c, _b = self._get_rcb(i)
         if self.solution[i] == 0:
-            self.cell_candidates[i] -= self.rows[_r] | self.cols[_c] | self.squares[_b]
+            self.cell_candidates[i] = list(set(self.cell_candidates[i]) - (self.rows[_r] | self.cols[_c] | self.squares[_b]))
             if len(self.cell_candidates[i]) == 1:
                 self.solution[i] = self.cell_candidates[i].pop()
                 self.rows[_r].add(self.solution[i])
                 self.cols[_c].add(self.solution[i])
                 self.squares[_b].add(self.solution[i])
+                return
         else:
-            self.cell_candidates[i] = set()
+            self.cell_candidates[i] = list()
     def solve(self, i) -> bool:
         is_solved = self._solve(i)
         if self.n_solutions > 0:
@@ -94,26 +96,44 @@ class Sudoku:
             return True
         return is_solved
 
+    def _sort_by_candidate_frequency(self) -> list[int]:
+        """Sorts each set of candidates by frequency of occurance and returns a list
+        of the sums of the frequencies for each possible candidate a given cell"""
+        candidate_frequency = [0 for _ in range(Sudoku._N)]
+        for i in range(Sudoku._NN):
+            for candidate in self.cell_candidates[i]:
+                candidate_frequency[candidate-1] = candidate_frequency[candidate-1] + 1
+        for i in range(Sudoku._NN):
+            self.cell_candidates[i].sort(key=lambda candidate: candidate_frequency[candidate-1])
+        frequencies = [sum(candidate_frequency[candidate-1] for candidate in self.cell_candidates[i]) for i in range(Sudoku._NN)]
+        numbers = [i for i in range(1, Sudoku._N + 1)]
+        # print(numbers)
+        # print(candidate_frequency)
+        # numbers.sort(key=lambda i: candidate_frequency[i-1])
+        # print(numbers)
+
+        return frequencies
+
     def _solve(self,i) -> bool:
         """Recursively solves the puzzle using back tracking"""
-        if i >= Sudoku._NN:
+        if i >= len(self.solution_order):
             if self.n_solutions == 0:
                 self._temp = self.solution.copy()
             self.n_solutions = self.n_solutions + 1
             return True
-        if self.solution[i] != 0:
+        if self.solution[self.solution_order[i]] != 0:
             return self._solve(i+1)
         else:
             have_solution = False
-            for candidate in self.cell_candidates[i]:
-                if self.candidate_inserted_if_valid(i, candidate):
+            for candidate in self.cell_candidates[self.solution_order[i]]:
+                if self.candidate_inserted_if_valid(self.solution_order[i], candidate):
                     if (have_solution := self._solve(i+1)):
                         if self.n_solutions > 1:
                             return True
-                    self.rows[self._r[i]].remove(candidate)
-                    self.cols[self._c[i]].remove(candidate)
-                    self.squares[self._b[i]].remove(candidate)
-                    self.solution[i] = 0
+                    self.rows[self._r[self.solution_order[i]]].remove(candidate)
+                    self.cols[self._c[self.solution_order[i]]].remove(candidate)
+                    self.squares[self._b[self.solution_order[i]]].remove(candidate)
+                    self.solution[self.solution_order[i]] = 0
             return have_solution
 
 
@@ -129,7 +149,7 @@ class Sudoku:
         self.solution = list(puzzle)
         self.solution_id = ""
         self.n_solutions = 0
-        self.cell_candidates = [set(range(1,Sudoku._N + 1)) for i in range(Sudoku._NN)]
+        self.cell_candidates = [list(range(1,Sudoku._N + 1)) for i in range(Sudoku._NN)]
         if not self.solution_is_valid():
             raise ValueError(f"Invalid puzzle:\n{self}")
         _solved = self.puzzle.count(0)
@@ -140,6 +160,13 @@ class Sudoku:
             cross_hatch = False
             if cross_hatch := self.solution.count(0) != _solved:
                 _solved = self.solution.count(0)
+        solution_order = [i for i in range(Sudoku._NN) if self.solution[i] == 0]
+        # solution_order.sort(key=lambda i: self._sort_by_candidate_frequency()[i])
+        # self._sort_by_candidate_frequency().sort()
+        # solution_order.sort(key=lambda i: len(self.cell_candidates[i]))
+        self.solution_order = tuple(solution_order)
+        # for i in solution_order:
+        #     print(f"{i}: {self.cell_candidates[i]}")
 
     def __str__(self) -> str:
         """Returns a pretty string representation of the puzzle"""
