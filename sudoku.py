@@ -248,7 +248,7 @@ if __name__ == "__main__":
     print(board.__repr__())
     # print(inspect.getsource(Sudoku.__repr__))
     # with Profiler(interval=0.001) as profiler2:
-    if not board.solve(0, find_duplicates=False):
+    if not board.solve(0, find_duplicates=True):
         print(board)
         print(board.__repr__())
         raise ValueError(f"No solution found for puzzle {board.puzzle_id}")
