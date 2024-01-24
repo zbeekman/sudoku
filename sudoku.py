@@ -97,7 +97,7 @@ class Sudoku:
             return True
         return is_solved
 
-    def _sort_by_candidate_frequency(self) -> list[int]:
+    def _sort_by_candidate_frequency(self) -> list[float]:
         """Sorts each set of candidates by frequency of occurance and returns a list
         of the sums of the frequencies for each possible candidate a given cell"""
         candidate_frequency = [0 for _ in range(Sudoku._N)]
@@ -105,9 +105,10 @@ class Sudoku:
             for candidate in self.cell_candidates[i]:
                 candidate_frequency[candidate-1] = candidate_frequency[candidate-1] + 1
         for i in range(Sudoku._NN):
-            self.cell_candidates[i].sort(key=lambda candidate: candidate_frequency[candidate-1])
-        frequencies = [sum(candidate_frequency[candidate-1] for candidate in self.cell_candidates[i]) for i in range(Sudoku._NN)]
-        numbers = [i for i in range(1, Sudoku._N + 1)]
+            self.cell_candidates[i].sort(key=lambda candidate: candidate_frequency[candidate-1],reverse=True)
+        # Return the average frequency of candidates for each cell
+        frequencies = [sum(candidate_frequency[candidate-1] for candidate in self.cell_candidates[i])/len(self.cell_candidates[i]) if len(self.cell_candidates[i]) > 0 else 0 for i in range(Sudoku._NN)]
+        # numbers = [i for i in range(1, Sudoku._N + 1)]
         # print(numbers)
         # print(candidate_frequency)
         # numbers.sort(key=lambda i: candidate_frequency[i-1])
@@ -161,7 +162,7 @@ class Sudoku:
                 _solved = self.solution.count(0)
         solution_order = [i for i in range(Sudoku._NN) if self.solution[i] == 0]
         # solution_order.sort(key=lambda i: self._sort_by_candidate_frequency()[i])
-        # self._sort_by_candidate_frequency().sort()
+        frequencies = self._sort_by_candidate_frequency()
         # solution_order.sort(key=lambda i: len(self.cell_candidates[i]))
         self.solution_order = tuple(solution_order)
         # for i in solution_order:
@@ -247,7 +248,7 @@ if __name__ == "__main__":
     print(board.__repr__())
     # print(inspect.getsource(Sudoku.__repr__))
     # with Profiler(interval=0.001) as profiler2:
-    if not board.solve(0, find_duplicates=True):
+    if not board.solve(0, find_duplicates=False):
         print(board)
         print(board.__repr__())
         raise ValueError(f"No solution found for puzzle {board.puzzle_id}")
