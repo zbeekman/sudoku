@@ -116,6 +116,9 @@ class Sudoku:
 
         return frequencies
 
+    # install line_profiler with pip install line_profiler
+    # kernprof -l -v sudoku.py to get a line-by-line profile
+    # @profile
     def _solve(self,i, find_duplicates=False) -> bool:
         """Recursively solves the puzzle using back tracking"""
         if i >= len(self.solution_order):
