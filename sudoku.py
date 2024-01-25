@@ -104,12 +104,13 @@ class Sudoku:
             len_before = len(self.cell_candidates[i])
             self.cell_candidates[i] = list(set(self.cell_candidates[i]) - (self.rows[_r] | self.cols[_c] | self.squares[_b]))
             modified = len_before != len(self.cell_candidates[i])
-            # modified = modified or self.prune_doublets(i)
+            modified |= self.prune_doublets(i)
             if len(self.cell_candidates[i]) == 1:
                 self.solution[i] = self.cell_candidates[i].pop()
                 self.rows[_r].add(self.solution[i])
                 self.cols[_c].add(self.solution[i])
                 self.squares[_b].add(self.solution[i])
+                modified = True
             return modified
         else:
             if len(self.cell_candidates[i]) > 0:
@@ -120,26 +121,59 @@ class Sudoku:
     def prune_doublets(self,i) -> bool:
         """Removes doublets from the candidates and returns whether any doublets were removed"""
         modified = False
+        # print(f"Checking for doublets in row {i//Sudoku._N}, col {i%Sudoku._N}, block {self._b[i]}")
         if len(self.cell_candidates[i]) == 2:
+            # print(f"Found doublet candidate {self.cell_candidates[i]} at row {i//Sudoku._N}, col {i%Sudoku._N}, block {self._b[i]}, index {i}")
             for j in Sudoku._get_rows(i):
                 if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
+                    # print(f"Found doublet pair {self.cell_candidates[j]} in row {j//Sudoku._N}, index {j}")
                     for k in Sudoku._get_rows(i):
                         if k != i and k != j:
+                            len_before = len(self.cell_candidates[k])
                             self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
+                            # if len_before != len(self.cell_candidates[k]):
+                            #     print(f"Removing {self.cell_candidates[i]} from row {k//Sudoku._N}, index {k}")
+                            #     print(f"Candidates left: {self.cell_candidates[k]}")
+                            if len(self.cell_candidates[k]) == 1:
+                                self.solution[k] = self.cell_candidates[k].pop()
+                                self.rows[self._r[k]].add(self.solution[k])
+                                self.cols[self._c[k]].add(self.solution[k])
+                                self.squares[self._b[k]].add(self.solution[k])
                             modified = True
                     break
             for j in Sudoku._get_cols(i):
                 if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
+                    # print(f"Found doublet pair {self.cell_candidates[j]} in col {i%Sudoku._N}, index {j}")
                     for k in Sudoku._get_cols(i):
                         if k != i and k != j:
+                            len_before = len(self.cell_candidates[k])
                             self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
+                            # if len_before != len(self.cell_candidates[k]):
+                            #     print(f"Removing {self.cell_candidates[i]} from col {k%Sudoku._N}, index {k}")
+                            #     print(f"Candidates left: {self.cell_candidates[k]}")
+
+                            if len(self.cell_candidates[k]) == 1:
+                                self.solution[k] = self.cell_candidates[k].pop()
+                                self.rows[self._r[k]].add(self.solution[k])
+                                self.cols[self._c[k]].add(self.solution[k])
+                                self.squares[self._b[k]].add(self.solution[k])
                             modified = True
                     break
             for j in Sudoku._get_block(i):
                 if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
+                    # print(f"Found doublet pair {self.cell_candidates[j]} in block {self._b[j]}, index {j}")
                     for k in Sudoku._get_block(i):
                         if k != i and k != j:
+                            len_before = len(self.cell_candidates[k])
                             self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
+                            # if len_before != len(self.cell_candidates[k]):
+                            #     print(f"Removing {self.cell_candidates[i]} from block {self._b[k]}, index {k}")
+                            #     print(f"Candidates left: {self.cell_candidates[k]}")
+                            if len(self.cell_candidates[k]) == 1:
+                                self.solution[k] = self.cell_candidates[k].pop()
+                                self.rows[self._r[k]].add(self.solution[k])
+                                self.cols[self._c[k]].add(self.solution[k])
+                                self.squares[self._b[k]].add(self.solution[k])
                             modified = True
                     break
         return modified
@@ -215,8 +249,10 @@ class Sudoku:
         _solved = self.puzzle.count(0)
         cross_hatch = True
         while cross_hatch:
+            modified = False
             for i in range(Sudoku._NN):
-                self.prune_candidates(i)
+                modified |= self.prune_candidates(i) # Be carefull of short circuiting
+            print(f"Total number of candidates: {sum(len(self.cell_candidates[i]) for i in range(Sudoku._NN))}")
             cross_hatch = False
             if cross_hatch := self.solution.count(0) != _solved:
                 _solved = self.solution.count(0)
@@ -280,19 +316,19 @@ if __name__ == "__main__":
         2 5 7  6 1 4  9 3 8
         4 8 1  9 3 7  2 5 6 """
     # NYT easy puzzle, solved using elimination during pruning
-    """ board = Sudoku((
-            0,0,4, 0,6,0, 3,0,0,
-            0,7,6, 0,3,0, 9,2,0,
-            1,0,3, 8,5,0, 0,6,0,
+    # board = Sudoku((
+    #         0,0,4, 0,6,0, 3,0,0,
+    #         0,7,6, 0,3,0, 9,2,0,
+    #         1,0,3, 8,5,0, 0,6,0,
 
-            0,1,0, 0,4,5, 0,0,3,
-            0,9,0, 0,0,2, 1,0,5,
-            4,6,0, 3,0,1, 0,8,0,
+    #         0,1,0, 0,4,5, 0,0,3,
+    #         0,9,0, 0,0,2, 1,0,5,
+    #         4,6,0, 3,0,1, 0,8,0,
 
-            0,0,0, 9,2,8, 0,3,0,
-            8,3,2, 0,0,0, 0,7,9,
-            0,0,0, 5,0,3, 0,0,2,
-            )) """
+    #         0,0,0, 9,2,8, 0,3,0,
+    #         8,3,2, 0,0,0, 0,7,9,
+    #         0,0,0, 5,0,3, 0,0,2,
+    #         ))
     # NYT easy puzzle, solution:
     """
     9 8 4  2 6 7  3 5 1
@@ -306,9 +342,23 @@ if __name__ == "__main__":
     7 5 1  9 2 8  4 3 6
     8 3 2  4 1 6  5 7 9
     6 4 9  5 7 3  8 1 2 """
+    # NYT medium puzzle:
+    # board = Sudoku((
+    #         0,2,8, 0,0,0, 4,0,0,
+    #         0,0,0, 0,0,3, 0,0,9,
+    #         0,3,0, 9,1,0, 0,7,0,
+
+    #         0,0,0, 0,0,0, 1,0,8,
+    #         6,0,0, 1,3,0, 0,0,0,
+    #         0,0,9, 0,0,0, 2,0,0,
+
+    #         3,6,0, 0,7,4, 0,0,0,
+    #         0,0,0, 0,0,0, 7,2,0,
+    #         0,0,1, 0,5,0, 0,0,0,
+    #         ))
     # print(profiler.output_text(unicode=True, color=True))
     print(board)
-    print(board.__repr__())
+    # print(board.__repr__())
     # print(inspect.getsource(Sudoku.__repr__))
     # with Profiler(interval=0.001) as profiler2:
     if not board.solve(0, find_duplicates=True):
@@ -329,5 +379,5 @@ if __name__ == "__main__":
         raise ValueError(f"Invalid solution for puzzle {board.puzzle_id}")
     # print(profiler2.output_text(unicode=True, color=True))
     print(board)
-    print(board.__repr__())
+    # print(board.__repr__())
 
