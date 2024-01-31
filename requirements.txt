@@ -1,0 +1,4 @@
+attrs==23.2.0
+colorama==0.4.6
+line-profiler==4.1.2
+numpy==1.26.3
