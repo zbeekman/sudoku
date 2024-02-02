@@ -1,9 +1,10 @@
-from attrs import define, frozen, field, setters
-from math import sqrt
 import inspect
-from colorama import init as colorama_init
-from colorama import Fore, Style
 from hashlib import sha1
+from math import sqrt
+
+from attrs import define, field, frozen, setters
+from colorama import Fore, Style
+from colorama import init as colorama_init
 
 colorama_init()
 

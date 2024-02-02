@@ -1,1 +1,1 @@
-from .sudoku import Sudoku, Constraint
+from .sudoku import Constraint, Sudoku
