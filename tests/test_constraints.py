@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import copy
-from sudoku import Sudoku, Constraint
+from sudokutoolbox import Sudoku, Constraint
 
 _1 = np.int_(1)
 

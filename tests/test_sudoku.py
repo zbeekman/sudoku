@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from sudoku import Sudoku
+from sudokutoolbox import Sudoku
 
 class TestSudoku:
 
