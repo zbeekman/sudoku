@@ -1,18 +1,19 @@
-import inspect
 from hashlib import sha1
 from math import sqrt
 
-from attrs import define, field, frozen, setters
+from attrs import define, field
 from colorama import Fore, Style
 from colorama import init as colorama_init
 
 colorama_init()
 
+
 @define
 class Sudoku:
     """A class representing a sudoku puzzle"""
+
     _N = 9
-    _NN = _N*_N
+    _NN = _N * _N
     _BL = int(sqrt(_N))
 
     _r: tuple[int, ...] = field(repr=False)
@@ -41,12 +42,17 @@ class Sudoku:
     @staticmethod
     def _get_index(r: int, c: int) -> int:
         """Returns the index of the cell at row r and column c"""
-        return r*Sudoku._N + c
+        return r * Sudoku._N + c
 
     @staticmethod
     def _get_rows(i: int) -> tuple[int, ...]:
         """Returns a tuple of indices in the same row as the ith element in the puzzle"""
-        return tuple(j for j in range(i // Sudoku._N * Sudoku._N, i // Sudoku._N * Sudoku._N + Sudoku._N))
+        return tuple(
+            j
+            for j in range(
+                i // Sudoku._N * Sudoku._N, i // Sudoku._N * Sudoku._N + Sudoku._N
+            )
+        )
 
     @staticmethod
     def _get_cols(i: int) -> tuple[int, ...]:
@@ -57,13 +63,24 @@ class Sudoku:
     def _get_block(i: int) -> tuple[int, ...]:
         """Returns a tuple of indices in the same block as the ith element in the puzzle"""
         r, c, b = Sudoku._get_rcb(i)
-        return tuple([j for j in range(Sudoku._NN) if ((j//Sudoku._N)//Sudoku._BL == b[0] and (j % Sudoku._N)//Sudoku._BL == b[1])])
+        return tuple(
+            [
+                j
+                for j in range(Sudoku._NN)
+                if (
+                    (j // Sudoku._N) // Sudoku._BL == b[0]
+                    and (j % Sudoku._N) // Sudoku._BL == b[1]
+                )
+            ]
+        )
 
     def cell_is_valid(self, i) -> bool:
         """Returns whether the puzzle is valid and populates the rows, cols, and squares sets"""
-        if (self.solution[i] in self.rows[self._r[i]] or
-            self.solution[i] in self.cols[self._c[i]] or
-            self.solution[i] in self.squares[self._b[i]]):
+        if (
+            self.solution[i] in self.rows[self._r[i]]
+            or self.solution[i] in self.cols[self._c[i]]
+            or self.solution[i] in self.squares[self._b[i]]
+        ):
             return False
         if self.solution[i] == 0:
             return True
@@ -74,9 +91,11 @@ class Sudoku:
 
     def candidate_inserted_if_valid(self, i, candidate) -> bool:
         """Inserts the candidate into the solution if it is valid and returns whether the candidate was inserted"""
-        if (candidate in self.rows[self._r[i]] or
-            candidate in self.cols[self._c[i]] or
-            candidate in self.squares[self._b[i]]):
+        if (
+            candidate in self.rows[self._r[i]]
+            or candidate in self.cols[self._c[i]]
+            or candidate in self.squares[self._b[i]]
+        ):
             return False
         self.solution[i] = candidate
         self.rows[self._r[i]].add(candidate)
@@ -88,7 +107,9 @@ class Sudoku:
         """Returns whether the solution is valid"""
         self.cols = [set() for _ in range(Sudoku._N)]
         self.rows = [set() for _ in range(Sudoku._N)]
-        self.squares = {(i,j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)}
+        self.squares = {
+            (i, j): set() for i in range(Sudoku._BL) for j in range(Sudoku._BL)
+        }
         for i in range(Sudoku._NN):
             if not self.cell_is_valid(i):
                 return False
@@ -103,7 +124,10 @@ class Sudoku:
         modified = False
         if self.solution[i] == 0:
             len_before = len(self.cell_candidates[i])
-            self.cell_candidates[i] = list(set(self.cell_candidates[i]) - (self.rows[_r] | self.cols[_c] | self.squares[_b]))
+            self.cell_candidates[i] = list(
+                set(self.cell_candidates[i])
+                - (self.rows[_r] | self.cols[_c] | self.squares[_b])
+            )
             modified = len_before != len(self.cell_candidates[i])
             modified |= self.prune_doublets(i)
             if len(self.cell_candidates[i]) == 1:
@@ -119,22 +143,20 @@ class Sudoku:
                 return True
             return False
 
-    def prune_doublets(self,i) -> bool:
+    def prune_doublets(self, i) -> bool:
         """Removes doublets from the candidates and returns whether any doublets were removed"""
         modified = False
         # print(f"Checking for doublets in row {i//Sudoku._N}, col {i%Sudoku._N}, block {self._b[i]}")
         if len(self.cell_candidates[i]) == 2:
-            # print(f"Found doublet candidate {self.cell_candidates[i]} at row {i//Sudoku._N}, col {i%Sudoku._N}, block {self._b[i]}, index {i}")
             for j in Sudoku._get_rows(i):
                 if i != j and self.cell_candidates[i] == self.cell_candidates[j]:
                     # print(f"Found doublet pair {self.cell_candidates[j]} in row {j//Sudoku._N}, index {j}")
                     for k in Sudoku._get_rows(i):
                         if k != i and k != j:
-                            len_before = len(self.cell_candidates[k])
-                            self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
-                            # if len_before != len(self.cell_candidates[k]):
-                            #     print(f"Removing {self.cell_candidates[i]} from row {k//Sudoku._N}, index {k}")
-                            #     print(f"Candidates left: {self.cell_candidates[k]}")
+                            self.cell_candidates[k] = list(
+                                set(self.cell_candidates[k])
+                                - set(self.cell_candidates[i])
+                            )
                             if len(self.cell_candidates[k]) == 1:
                                 self.solution[k] = self.cell_candidates[k].pop()
                                 self.rows[self._r[k]].add(self.solution[k])
@@ -147,12 +169,10 @@ class Sudoku:
                     # print(f"Found doublet pair {self.cell_candidates[j]} in col {i%Sudoku._N}, index {j}")
                     for k in Sudoku._get_cols(i):
                         if k != i and k != j:
-                            len_before = len(self.cell_candidates[k])
-                            self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
-                            # if len_before != len(self.cell_candidates[k]):
-                            #     print(f"Removing {self.cell_candidates[i]} from col {k%Sudoku._N}, index {k}")
-                            #     print(f"Candidates left: {self.cell_candidates[k]}")
-
+                            self.cell_candidates[k] = list(
+                                set(self.cell_candidates[k])
+                                - set(self.cell_candidates[i])
+                            )
                             if len(self.cell_candidates[k]) == 1:
                                 self.solution[k] = self.cell_candidates[k].pop()
                                 self.rows[self._r[k]].add(self.solution[k])
@@ -165,11 +185,10 @@ class Sudoku:
                     # print(f"Found doublet pair {self.cell_candidates[j]} in block {self._b[j]}, index {j}")
                     for k in Sudoku._get_block(i):
                         if k != i and k != j:
-                            len_before = len(self.cell_candidates[k])
-                            self.cell_candidates[k] = list(set(self.cell_candidates[k]) - set(self.cell_candidates[i]))
-                            # if len_before != len(self.cell_candidates[k]):
-                            #     print(f"Removing {self.cell_candidates[i]} from block {self._b[k]}, index {k}")
-                            #     print(f"Candidates left: {self.cell_candidates[k]}")
+                            self.cell_candidates[k] = list(
+                                set(self.cell_candidates[k])
+                                - set(self.cell_candidates[i])
+                            )
                             if len(self.cell_candidates[k]) == 1:
                                 self.solution[k] = self.cell_candidates[k].pop()
                                 self.rows[self._r[k]].add(self.solution[k])
@@ -178,7 +197,6 @@ class Sudoku:
                             modified = True
                     break
         return modified
-
 
     def solve(self, i, find_duplicates=False) -> bool:
         print(f"finding duplicates: {find_duplicates}")
@@ -195,11 +213,24 @@ class Sudoku:
         candidate_frequency = [0 for _ in range(Sudoku._N)]
         for i in range(Sudoku._NN):
             for candidate in self.cell_candidates[i]:
-                candidate_frequency[candidate-1] = candidate_frequency[candidate-1] + 1
+                candidate_frequency[candidate - 1] = (
+                    candidate_frequency[candidate - 1] + 1
+                )
         for i in range(Sudoku._NN):
-            self.cell_candidates[i].sort(key=lambda candidate: candidate_frequency[candidate-1],reverse=True)
+            self.cell_candidates[i].sort(
+                key=lambda candidate: candidate_frequency[candidate - 1], reverse=True
+            )
         # Return the average frequency of candidates for each cell
-        frequencies = [sum(candidate_frequency[candidate-1] for candidate in self.cell_candidates[i])/len(self.cell_candidates[i]) if len(self.cell_candidates[i]) > 0 else 0 for i in range(Sudoku._NN)]
+        frequencies = [
+            sum(
+                candidate_frequency[candidate - 1]
+                for candidate in self.cell_candidates[i]
+            )
+            / len(self.cell_candidates[i])
+            if len(self.cell_candidates[i]) > 0
+            else 0
+            for i in range(Sudoku._NN)
+        ]
         # numbers = [i for i in range(1, Sudoku._N + 1)]
         # print(numbers)
         # print(candidate_frequency)
@@ -211,7 +242,7 @@ class Sudoku:
     # install line_profiler with pip install line_profiler
     # kernprof -l -v sudoku.py to get a line-by-line profile
     # @profile
-    def _solve(self,i, find_duplicates=False) -> bool:
+    def _solve(self, i, find_duplicates=False) -> bool:
         """Recursively solves the puzzle using back tracking"""
         if i >= len(self.solution_order):
             if self.n_solutions == 0:
@@ -222,7 +253,7 @@ class Sudoku:
             have_solution = False
             for candidate in self.cell_candidates[self.solution_order[i]]:
                 if self.candidate_inserted_if_valid(self.solution_order[i], candidate):
-                    if (have_solution := self._solve(i+1, find_duplicates)):
+                    if have_solution := self._solve(i + 1, find_duplicates):
                         if (not find_duplicates) or self.n_solutions > 1:
                             return True
                     self.rows[self._r[self.solution_order[i]]].remove(candidate)
@@ -231,20 +262,24 @@ class Sudoku:
                     self.solution[self.solution_order[i]] = 0
             return have_solution
 
-
     def __init__(self, puzzle: tuple[int, ...]) -> None:
         if not len(puzzle) == Sudoku._NN:
             raise ValueError(f"Invalid puzzle, must be {Sudoku._NN} elements long")
         self._r = tuple(i // Sudoku._N for i in range(Sudoku._NN))
         self._c = tuple(i % Sudoku._N for i in range(Sudoku._NN))
-        self._b = tuple((self._r[i] // Sudoku._BL, self._c[i] // Sudoku._BL) for i in range(Sudoku._NN))
+        self._b = tuple(
+            (self._r[i] // Sudoku._BL, self._c[i] // Sudoku._BL)
+            for i in range(Sudoku._NN)
+        )
         self.puzzle = puzzle
         self._temp = list(puzzle)
         self.puzzle_id = sha1(str(puzzle).encode()).hexdigest()
         self.solution = list(puzzle)
         self.solution_id = ""
         self.n_solutions = 0
-        self.cell_candidates = [list(range(1,Sudoku._N + 1)) for i in range(Sudoku._NN)]
+        self.cell_candidates = [
+            list(range(1, Sudoku._N + 1)) for i in range(Sudoku._NN)
+        ]
         if not self.solution_is_valid():
             raise ValueError(f"Invalid puzzle:\n{self}")
         _solved = self.puzzle.count(0)
@@ -252,8 +287,10 @@ class Sudoku:
         while cross_hatch:
             modified = False
             for i in range(Sudoku._NN):
-                modified |= self.prune_candidates(i) # Be carefull of short circuiting
-            print(f"Total number of candidates: {sum(len(self.cell_candidates[i]) for i in range(Sudoku._NN))}")
+                modified |= self.prune_candidates(i)  # Be carefull of short circuiting
+            print(
+                f"Total number of candidates: {sum(len(self.cell_candidates[i]) for i in range(Sudoku._NN))}"
+            )
             cross_hatch = False
             if cross_hatch := self.solution.count(0) != _solved:
                 _solved = self.solution.count(0)
@@ -261,9 +298,15 @@ class Sudoku:
         # solution_order.sort(key=lambda i: len(self.cell_candidates[i]) + 1/self._sort_by_candidate_frequency()[i])
         # solution_order.sort(key=lambda i: len(self.cell_candidates[i]))
         # solution_order.sort(key=lambda i: self._sort_by_candidate_frequency()[i],reverse=True)
-        # Perform solution order based on the number of constraints on each cell. Cells with the most constraints are solved first.
-        solution_order.sort(key=lambda i: len(self.rows[self._r[i]]) + len(self.cols[self._c[i]]) +len(self.squares[self._b[i]]),reverse=True)
-        average_freq = self._sort_by_candidate_frequency()
+        # Perform solution order based on the number of constraints on each cell.
+        # Cells with the most constraints are solved first.
+        solution_order.sort(
+            key=lambda i: len(self.rows[self._r[i]])
+            + len(self.cols[self._c[i]])
+            + len(self.squares[self._b[i]]),
+            reverse=True,
+        )
+        # average_freq = self._sort_by_candidate_frequency()
         self.solution_order = tuple(solution_order)
         # for i in solution_order:
         #     print(f"{i}: {self.cell_candidates[i]}, average frequency: {average_freq[i]}")
@@ -277,10 +320,14 @@ class Sudoku:
             for j in range(Sudoku._N):
                 if j % Sudoku._BL == 0 and j != 0:
                     board_ += " "
-                cell_ = self.solution[i*Sudoku._N+j]
-                if self.puzzle[i*Sudoku._N+j] != 0:
-                    color = Fore.BLUE if cell_ == self.puzzle[i*Sudoku._N+j] else Fore.RED
-                    board_ += Fore.BLUE + str(cell_) + Style.RESET_ALL + " "
+                cell_ = self.solution[i * Sudoku._N + j]
+                if self.puzzle[i * Sudoku._N + j] != 0:
+                    color = (
+                        Fore.BLUE
+                        if cell_ == self.puzzle[i * Sudoku._N + j]
+                        else Fore.RED
+                    )
+                    board_ += color + str(cell_) + Style.RESET_ALL + " "
                 else:
                     board_ += (str(cell_) if cell_ != 0 else ".") + " "
             board_ += "\n"
@@ -291,19 +338,21 @@ if __name__ == "__main__":
     # from pyinstrument import Profiler
     # with Profiler(interval=0.00001) as profiler:
     # NYT hard puzzle
-    board = Sudoku((
-            0,0,0, 2,0,0, 0,0,0,
-            0,0,0, 5,9,0, 3,0,7,
-            0,0,0, 0,0,0, 6,9,0,
+    board = Sudoku(
+        (
+            0, 0, 0,  2, 0, 0,  0, 0, 0,
+            0, 0, 0,  5, 9, 0,  3, 0, 7,
+            0, 0, 0,  0, 0, 0,  6, 9, 0,
 
-            0,0,0, 0,0,8, 0,0,0,
-            0,1,9, 0,0,0, 0,8,3,
-            0,0,4, 0,6,0, 0,0,0,
+            0, 0, 0,  0, 0, 8,  0, 0, 0,
+            0, 1, 9,  0, 0, 0,  0, 8, 3,
+            0, 0, 4,  0, 6, 0,  0, 0, 0,
 
-            3,0,0, 0,2,0, 7,0,1,
-            0,5,7, 0,0,4, 0,0,0,
-            0,8,0, 0,3,0, 0,0,0,
-            ))
+            3, 0, 0,  0, 2, 0,  7, 0, 1,
+            0, 5, 7,  0, 0, 4,  0, 0, 0,
+            0, 8, 0,  0, 3, 0,  0, 0, 0,
+        )
+    )
     # NYT hard puzzle, solution:
     """ 9 6 5  2 7 3  8 1 4
         1 4 8  5 9 6  3 2 7
@@ -381,4 +430,3 @@ if __name__ == "__main__":
     # print(profiler2.output_text(unicode=True, color=True))
     print(board)
     # print(board.__repr__())
-
