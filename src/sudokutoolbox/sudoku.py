@@ -14,7 +14,9 @@ def is_square(N: int) -> bool:
 
 def valid_square(instance, attribute, value):
     if not is_square(value):
-        raise ValueError(f"{attribute.name} of {instance.name} must have an integer square root.")
+        raise ValueError(
+            f"{attribute.name} of {instance.name} must have an integer square root."
+        )
 
 
 @define(kw_only=True)
@@ -22,37 +24,58 @@ class Constraint:
     N: int = field(
         default=9,
         on_setattr=setters.frozen,
-        validator=[validators.instance_of(int), validators.gt(0), valid_square])  # type: ignore
-    _RN: int = field(init=False, default=Factory(lambda self: int(math.sqrt(self.N)), takes_self=True))
+        validator=[validators.instance_of(int), validators.gt(0), valid_square],  # type: ignore
+    )  # type: ignore
+    _RN: int = field(
+        init=False,
+        default=Factory(lambda self: int(math.sqrt(self.N)), takes_self=True),
+    )
     r: tuple[int, ...] = field(
         init=False,
         repr=False,
-        default=Factory(lambda self: tuple(i//self.N for i in range(self.N**2)), takes_self=True))
+        default=Factory(
+            lambda self: tuple(i // self.N for i in range(self.N**2)), takes_self=True
+        ),
+    )
     c: tuple[int, ...] = field(
         init=False,
         repr=False,
-        default=Factory(lambda self: tuple(i % self.N for i in range(self.N**2)), takes_self=True))
+        default=Factory(
+            lambda self: tuple(i % self.N for i in range(self.N**2)), takes_self=True
+        ),
+    )
     b: tuple[tuple[int, int], ...] = field(
         init=False,
         repr=False,
         default=Factory(
-            lambda self: tuple((self.r[i]//self._RN, self.c[i]//self._RN) for i in range(self.N**2)),
-            takes_self=True))
+            lambda self: tuple(
+                (self.r[i] // self._RN, self.c[i] // self._RN)
+                for i in range(self.N**2)
+            ),
+            takes_self=True,
+        ),
+    )
     row: npt.NDArray[np.int_] = field(
         converter=np.array,
         eq=cmp_using(np.array_equal),
-        default=Factory(lambda self: np.zeros(self.N, dtype=np.int_), takes_self=True))
+        default=Factory(lambda self: np.zeros(self.N, dtype=np.int_), takes_self=True),
+    )
     col: npt.NDArray[np.int_] = field(
         converter=np.array,
         eq=cmp_using(np.array_equal),
-        default=Factory(lambda self: np.zeros(self.N, dtype=np.int_), takes_self=True))
+        default=Factory(lambda self: np.zeros(self.N, dtype=np.int_), takes_self=True),
+    )
     box: npt.NDArray[np.int_] = field(
         converter=np.array,
         eq=cmp_using(np.array_equal),
-        default=Factory(lambda self: np.zeros(tuple(self._RN for _ in range(2)), dtype=np.int_), takes_self=True))
+        default=Factory(
+            lambda self: np.zeros(tuple(self._RN for _ in range(2)), dtype=np.int_),
+            takes_self=True,
+        ),
+    )
 
     @classmethod
-    def from_puzzle(cls, puzzle: npt.NDArray[np.int_]) -> 'Constraint':
+    def from_puzzle(cls, puzzle: npt.NDArray[np.int_]) -> "Constraint":
         if not is_square(puzzle.size):
             raise ValueError("Puzzle must be a perfect square.")
         root_n = int(math.sqrt(puzzle.size))
@@ -64,15 +87,17 @@ class Constraint:
             if puzzle[i, j] != 0:
                 _row[i] |= _1 << puzzle[i, j]
                 _col[j] |= _1 << puzzle[i, j]
-                _box[i//root_rn, j//root_rn] |= _1 << puzzle[i, j]
+                _box[i // root_rn, j // root_rn] |= _1 << puzzle[i, j]
         return cls(N=root_n, row=_row, col=_col, box=_box)
 
     def is_safe(self, i: int, v: np.int_) -> bool:
         """If the constraint isn't already present, update the constraint and return True."""
         shifted: np.int_ = _1 << v
-        if ((self.row[self.r[i]] & shifted)
-                or (self.col[self.c[i]] & shifted)
-                or (self.box[self.b[i]] & shifted)):
+        if (
+            (self.row[self.r[i]] & shifted)
+            or (self.col[self.c[i]] & shifted)
+            or (self.box[self.b[i]] & shifted)
+        ):
             return False
         return True
 
@@ -90,8 +115,16 @@ class Constraint:
         self.box[self.b[i]] &= ~shifted
 
 
-def _convert(input: Union[str, npt.NDArray[np.int_], Tuple[int, ...], Tuple[Tuple[int, ...]], List[int], List[List[int]]]) \
-        -> npt.NDArray[np.int_]:
+def _convert(
+    input: Union[
+        str,
+        npt.NDArray[np.int_],
+        Tuple[int, ...],
+        Tuple[Tuple[int, ...]],
+        List[int],
+        List[List[int]],
+    ]
+) -> npt.NDArray[np.int_]:
     """Converts input to a 2D numpy array of integers.
     "." and "0" are treated as empty cells.
     """
@@ -105,7 +138,9 @@ def _convert(input: Union[str, npt.NDArray[np.int_], Tuple[int, ...], Tuple[Tupl
         input = np.array(input)
     if input.ndim == 1:
         if not is_square(input.size):
-            raise ValueError(f"Input string length ({len(input)}) is not a perfect square.")
+            raise ValueError(
+                f"Input string length ({len(input)}) is not a perfect square."
+            )
         _n = int(math.sqrt(input.size))
         input = input.reshape((_n, _n))
     return input
@@ -118,20 +153,28 @@ class Sudoku:
         on_setattr=setters.frozen,
         validator=[validators.instance_of(int), validators.gt(0), valid_square],  # type: ignore
         alias="_N",
-        kw_only=True)
+        kw_only=True,
+    )
     puzzle: npt.NDArray[np.int_] = field(
         eq=cmp_using(eq=np.array_equal),
         converter=_convert,
         on_setattr=setters.frozen,
-        default=Factory(lambda self: np.zeros((self._N, self._N), dtype=np.int_), takes_self=True))
+        default=Factory(
+            lambda self: np.zeros((self._N, self._N), dtype=np.int_), takes_self=True
+        ),
+    )
     solution: npt.NDArray[np.int_] = field(
         eq=cmp_using(eq=np.array_equal),
         init=False,
-        default=Factory(lambda self: self.puzzle.flatten(), takes_self=True))
+        default=Factory(lambda self: self.puzzle.flatten(), takes_self=True),
+    )
     constraint: Constraint = field(
         init=False,
-        default=Factory(lambda self: Constraint.from_puzzle(self.puzzle), takes_self=True),
-        repr=False)
+        default=Factory(
+            lambda self: Constraint.from_puzzle(self.puzzle), takes_self=True
+        ),
+        repr=False,
+    )
     candidates: list[list[np.int_]] = field(init=False, on_setattr=setters.frozen)
 
     @candidates.default  # type: ignore
@@ -142,9 +185,9 @@ class Sudoku:
             if self.puzzle[i, j] != 0:
                 continue
             for k in range(self._N):
-                if self.constraint.is_safe(i*self._N + j, k+_1):
-                    c[i*self._N + j].append(np.int_(k+1))
-                    frequency[k-1] += 1
+                if self.constraint.is_safe(i * self._N + j, k + _1):
+                    c[i * self._N + j].append(np.int_(k + 1))
+                    frequency[k - 1] += 1
         # for possible in c:
         #     possible.sort(key=lambda x: frequency[x-1],reverse=True)
         return c
@@ -156,12 +199,12 @@ class Sudoku:
         if i >= self._N**2:
             return True
         if self.solution[i] != 0:
-            return self.solve(i+1)
+            return self.solve(i + 1)
         for v in self.candidates[i]:
             if self.constraint.is_safe(i, v):
                 self.solution[i] = v
                 self.constraint.update(i, v)
-                if self.solve(i+1):
+                if self.solve(i + 1):
                     return True
                 self.solution[i] = 0
                 self.constraint.remove(i, v)
@@ -175,5 +218,5 @@ def main():
     print(puz4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
