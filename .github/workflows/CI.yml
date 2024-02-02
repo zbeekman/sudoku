@@ -38,4 +38,4 @@ jobs:
     - name: Benchmark solver
       run: |
         time python -u -OO -m sudokutoolbox
-        python -u -OO -m cProfile src/sudokutoolbox/sudoku.py
+        python -u -OO -m cProfile -s tottime src/sudokutoolbox/sudoku.py
