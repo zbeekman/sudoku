@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sudoku_utils"
+name = "sudoku-utils"
 version = "0.0.1"
 authors = [
   { name="Izaak Beekman", email="zbeekman@gmail.com" },
@@ -16,6 +16,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[tool.hatch.build.targets.wheel]
+      packages = ["src/sudoku-utils"]
 
 [project.urls]
 Homepage = "https://github.com/zbeekman/sudoku"
