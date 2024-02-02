@@ -150,8 +150,11 @@ class Sudoku:
                 self.constraint.remove(i, v)
         return False
 
-if __name__ == '__main__':
+def main():
     nyt_hard = "...2........59.3.7......69......8....19....83..4.6....3...2.7.1.57..4....8..3...."
     puz4 = Sudoku(nyt_hard)
     puz4.solve(0)
     print(puz4)
+
+if __name__ == '__main__':
+    main()
