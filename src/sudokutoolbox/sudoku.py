@@ -188,8 +188,8 @@ class Sudoku:
                 if self.constraint.is_safe(i * self._N + j, k + _1):
                     c[i * self._N + j].append(np.int_(k + 1))
                     frequency[k - 1] += 1
-        # for possible in c:
-        #     possible.sort(key=lambda x: frequency[x-1],reverse=True)
+        for possible in c:
+            possible.sort(key=lambda x: frequency[x - 1], reverse=True)
         return c
 
     # install line_profiler with pip install line_profiler
