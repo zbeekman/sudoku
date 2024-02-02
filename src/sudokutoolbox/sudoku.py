@@ -69,6 +69,18 @@ class Sudoku:
         ),
         repr=False,
     )
+    solution_order: npt.NDArray[np.int_] = field(
+        init=False,
+    )
+
+    @solution_order.default  # type: ignore
+    def _set_solution_order(self) -> npt.NDArray[np.int_]:
+        solution_order = [i for i in range(self._N**2) if self.solution[i] == 0]
+        solution_order.sort(
+            key=lambda x: self.constraint.count_constraints(x), reverse=True
+        )
+        return np.asarray(solution_order, dtype=np.int_)
+
     candidates: list[list[np.int_]] = field(init=False, on_setattr=setters.frozen)
 
     @candidates.default  # type: ignore
@@ -84,24 +96,27 @@ class Sudoku:
                     frequency[k - 1] += 1
         for possible in c:
             possible.sort(key=lambda x: frequency[x - 1], reverse=True)
+        # numbers = [i + 1 for i in range(self._N)]
+        # numbers.sort(key=lambda x: frequency[x - 1], reverse=True)
+        # frequency.sort(reverse=True)
+        # print(f"{[(i, c[i]) for i in self.solution_order]}")
         return c
 
     # install line_profiler with pip install line_profiler
     # kernprof -l -v sudoku.py to get a line-by-line profile
     # @profile
     def solve(self, i) -> bool:
-        if i >= self._N**2:
+        if i >= len(self.solution_order):
             return True
-        if self.solution[i] != 0:
-            return self.solve(i + 1)
-        for v in self.candidates[i]:
-            if self.constraint.is_safe(i, v):
-                self.solution[i] = v
-                self.constraint.update(i, v)
+        j = self.solution_order[i]
+        for v in self.candidates[j]:
+            if self.constraint.is_safe(j, v):
+                self.solution[j] = v
+                self.constraint.update(j, v)
                 if self.solve(i + 1):
                     return True
-                self.solution[i] = 0
-                self.constraint.remove(i, v)
+                self.solution[j] = 0
+                self.constraint.remove(j, v)
         return False
 
 
